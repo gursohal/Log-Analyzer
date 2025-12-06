@@ -1,0 +1,29 @@
+192.168.1.120 - - [06/Dec/2025:12:10:01 +0000] "GET /index.html HTTP/1.1" 200 1543 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+192.168.1.121 - - [06/Dec/2025:12:10:02 +0000] "GET /login HTTP/1.1" 200 2435 "-" "Mozilla/5.0"
+192.168.1.122 - - [06/Dec/2025:12:10:03 +0000] "POST /api/auth HTTP/1.1" 200 534 "-" "Mozilla/5.0"
+192.168.1.123 - - [06/Dec/2025:12:10:04 +0000] "GET /dashboard HTTP/1.1" 200 6521 "-" "Mozilla/5.0"
+
+45.77.23.10 - - [06/Dec/2025:12:10:05 +0000] "GET /../../../../etc/passwd HTTP/1.1" 404 0 "-" "curl/8.0"   <-- Path Traversal
+45.77.23.10 - - [06/Dec/2025:12:10:06 +0000] "GET /admin' OR '1'='1 HTTP/1.1" 400 0 "-" "sqlmap/1.7"     <-- SQLi
+45.77.23.10 - - [06/Dec/2025:12:10:07 +0000] "GET /search?q=<script>alert('XSS')</script> HTTP/1.1" 400 0 "-" "Mozilla/5.0"  <-- XSS
+45.77.23.10 - - [06/Dec/2025:12:10:08 +0000] "GET /test.php?file=../../etc/passwd HTTP/1.1" 404 0 "-" "nikto/2.1.6"  <-- More traversal
+45.77.23.10 - - [06/Dec/2025:12:10:09 +0000] "POST /admin/login HTTP/1.1" 401 0 "-" "python-requests/2.32"  <-- Brute force
+45.77.23.10 - - [06/Dec/2025:12:10:10 +0000] "POST /admin/login HTTP/1.1" 401 0 "-" "python-requests/2.32"
+45.77.23.10 - - [06/Dec/2025:12:10:11 +0000] "POST /admin/login HTTP/1.1" 401 0 "-" "python-requests/2.32"
+
+192.168.1.124 - - [06/Dec/2025:12:10:12 +0000] "GET /products HTTP/1.1" 200 3654 "-" "Mozilla/5.0"
+192.168.1.125 - - [06/Dec/2025:12:10:13 +0000] "POST /api/data HTTP/1.1" 201 453 "-" "Mozilla/5.0"
+
+45.77.23.10 - - [06/Dec/2025:12:10:14 +0000] "GET /api/export?cmd=rm -rf / HTTP/1.1" 400 0 "-" "curl/8.0"  <-- Command Injection Attempt
+
+192.168.1.126 - - [06/Dec/2025:12:10:15 +0000] "GET /contact HTTP/1.1" 200 2845 "-" "Mozilla/5.0"
+192.168.1.127 - - [06/Dec/2025:12:10:16 +0000] "POST /api/comments HTTP/1.1" 201 645 "-" "Mozilla/5.0"
+
+45.77.23.10 - - [06/Dec/2025:12:10:17 +0000] "GET /admin/config.php.bak HTTP/1.1" 404 0 "-" "nikto/2.1.6"  <-- Discovery scan
+45.77.23.10 - - [06/Dec/2025:12:10:18 +0000] "GET /server-status HTTP/1.1" 403 0 "-" "curl/8.0"  <-- Restricted access attempt
+
+192.168.1.128 - - [06/Dec/2025:12:10:19 +0000] "GET /blog HTTP/1.1" 200 5674 "-" "Mozilla/5.0"
+192.168.1.129 - - [06/Dec/2025:12:10:20 +0000] "GET /pricing HTTP/1.1" 200 3543 "-" "Mozilla/5.0"
+
+10.0.0.60 - - [06/Dec/2025:12:10:21 +0000] "GET /metrics HTTP/1.1" 200 234 "-" "Prometheus/2.0"
+192.168.1.130 - - [06/Dec/2025:12:10:22 +0000] "GET /features HTTP/1.1" 200 2980 "-" "Mozilla/5.0"
