@@ -69,8 +69,6 @@ CREATE INDEX IF NOT EXISTS idx_anomalies_confidence ON anomalies(confidence_scor
 CREATE INDEX IF NOT EXISTS idx_log_entries_log_file_id ON log_entries(log_file_id);
 CREATE INDEX IF NOT EXISTS idx_log_entries_timestamp ON log_entries(timestamp);
 
--- Insert default admin user (password: admin123)
--- Password hash generated with bcrypt, 10 rounds
-INSERT INTO users (email, password_hash, name) 
-VALUES ('admin@example.com', '$2a$10$rKZqvXQhYhVBMqLN8Q9aBe.OqHqLYNxQBQDlDKwqU5Y8P.8GHrVWC', 'Admin User')
-ON CONFLICT (email) DO NOTHING;
+-- Note: No default users are created for security reasons
+-- Create your first user by registering through the /api/auth/register endpoint
+-- Or use the setup script: npm run setup-admin

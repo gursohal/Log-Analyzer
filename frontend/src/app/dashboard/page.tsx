@@ -2,6 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  MethodsChart,
+  SeverityChart,
+  StatusCodeChart,
+  TopIPsChart,
+} from "./charts";
 
 interface LogFile {
   id: string;
@@ -163,6 +169,9 @@ export default function Dashboard() {
             top_sources: data.analysis?.summary?.top_sources || [],
             unique_ips: data.analysis?.summary?.unique_ips || 0,
             error_rate: data.analysis?.summary?.error_rate || 0,
+            status_distribution:
+              data.analysis?.summary?.status_distribution || {},
+            methods: data.analysis?.summary?.methods || {},
           },
         };
 
@@ -435,6 +444,50 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Visual Analytics Section */}
+            <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                📊 Visual Analytics
+              </h2>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Threat Severity Distribution */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                    Threat Severity Distribution
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <SeverityChart
+                      data={{
+                        critical:
+                          analysis.anomalies?.filter(
+                            (a) => a.severity?.toLowerCase() === "critical"
+                          ).length || 0,
+                        high: analysis.summary?.high_risk || 0,
+                        medium: analysis.summary?.medium_risk || 0,
+                        low: analysis.summary?.low_risk || 0,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Top Source IPs */}
+                {analysis.summary?.top_sources &&
+                  analysis.summary.top_sources.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                        Top 10 Source IPs by Request Volume
+                      </h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <TopIPsChart
+                          topSources={analysis.summary.top_sources}
+                        />
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+
             {/* Timeline */}
             {analysis.timeline && analysis.timeline.length > 0 && (
               <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
@@ -504,33 +557,76 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-
-              {analysis.summary?.top_sources &&
-                analysis.summary.top_sources.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="font-semibold text-gray-900 mb-3">
-                      Top 5 Source IPs (by request volume)
-                    </h3>
-                    <div className="space-y-2">
-                      {analysis.summary.top_sources.map(
-                        (source: any, index: number) => (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center bg-gray-50 px-4 py-2 rounded"
-                          >
-                            <span className="font-mono text-sm">
-                              {source.ip}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              {source.count} requests
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
             </div>
+
+            {/* Additional Charts */}
+            {selectedFile && analysis && (
+              <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  📈 Request Analytics
+                </h2>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* HTTP Status Codes */}
+                  {analysis.summary?.status_distribution && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                        HTTP Status Code Distribution
+                      </h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <StatusCodeChart
+                          statusCodes={analysis.summary.status_distribution}
+                        />
+                      </div>
+                      <div className="mt-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded"></div>
+                          <span>2xx: Success</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                          <span>3xx: Redirection</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                          <span>4xx: Client Error</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded"></div>
+                          <span>5xx: Server Error</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* HTTP Methods */}
+                  {analysis.summary?.methods && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                        HTTP Methods Distribution
+                      </h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <MethodsChart methods={analysis.summary.methods} />
+                      </div>
+                      <div className="mt-4 text-sm text-gray-600">
+                        <p>
+                          <strong>GET</strong>: Read operations
+                        </p>
+                        <p>
+                          <strong>POST</strong>: Create operations
+                        </p>
+                        <p>
+                          <strong>PUT/PATCH</strong>: Update operations
+                        </p>
+                        <p>
+                          <strong>DELETE</strong>: Delete operations
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Anomalies */}
             <div className="bg-white rounded-xl shadow-lg p-8 mb-6">

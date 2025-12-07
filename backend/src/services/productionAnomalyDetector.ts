@@ -278,11 +278,6 @@ export class ProductionAnomalyDetector {
       // Path traversal - HIGH severity (FIXED)
       for (const { pattern, name, confidence } of pathTraversalPatterns) {
         if (pattern.test(url)) {
-          // Store EXACT entry details for accurate reporting
-          console.log(
-            `Path Traversal detected at entry ${i}: ${entry.method} ${url} - Status: ${entry.status}`
-          );
-
           anomalies.push({
             type: "path_traversal_attempt",
             description: `Path Traversal (${name}) from ${ip}: ${entry.method} ${url} [Status: ${entry.status}]`,
@@ -493,19 +488,6 @@ export class ProductionAnomalyDetector {
     const methods: Record<string, number> = {};
     let totalBytes = 0;
 
-    // DEBUG: Log all entries to find the issue
-    console.log(`\n=== ANALYZING ${entries.length} LOG ENTRIES ===`);
-
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      console.log(
-        `Entry ${i + 1}: IP=${entry.ip}, Method=${entry.method}, URL=${
-          entry.url
-        }, Status=${entry.status}`
-      );
-    }
-    console.log(`=== END OF ENTRIES ===\n`);
-
     for (const entry of entries) {
       // Count ONLY valid, non-empty IPs
       if (entry.ip && entry.ip.trim() !== "" && entry.ip !== "undefined") {
@@ -519,10 +501,6 @@ export class ProductionAnomalyDetector {
 
         if (entry.status >= 400) {
           errorCount++;
-          // Debug logging to verify error counting
-          console.log(
-            `Error counted: ${entry.ip} - ${entry.method} ${entry.url} - Status: ${entry.status}`
-          );
         }
       }
 

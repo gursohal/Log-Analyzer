@@ -134,7 +134,11 @@ async function processLogFile(fileId: string, filePath: string) {
         end: entries[entries.length - 1]?.timestamp || null,
       },
       status_distribution: statistics.statusCodes,
-      top_sources: getTopSources(entries, 5),
+      methods: getMethodDistribution(entries),
+      top_sources: getTopSources(entries, 10),
+      high_risk: socReport.summary.highCount + socReport.summary.criticalCount,
+      medium_risk: socReport.summary.mediumCount,
+      low_risk: socReport.summary.lowCount,
     };
 
     // Create analysis record with SOC report
@@ -378,4 +382,20 @@ function getTopSources(entries: any[], limit: number) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([ip, count]) => ({ ip, count }));
+}
+
+/**
+ * Helper: Get HTTP method distribution
+ */
+function getMethodDistribution(entries: any[]): Record<string, number> {
+  const methodCounts: Record<string, number> = {};
+
+  for (const entry of entries) {
+    if (entry.method) {
+      const method = entry.method.toUpperCase();
+      methodCounts[method] = (methodCounts[method] || 0) + 1;
+    }
+  }
+
+  return methodCounts;
 }

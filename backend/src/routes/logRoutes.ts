@@ -8,6 +8,7 @@ import {
   uploadLog,
 } from "../controllers/logController";
 import { authenticateToken } from "../middleware/auth";
+import { uploadLimiter } from "../middleware/security";
 
 const router = Router();
 
@@ -62,8 +63,14 @@ const upload = multer({
  * Log Routes
  */
 
-// POST /api/logs/upload - Upload and analyze log file
-router.post("/upload", authenticateToken, upload.single("logFile"), uploadLog);
+// POST /api/logs/upload - Upload and analyze log file (with rate limiting)
+router.post(
+  "/upload",
+  authenticateToken,
+  uploadLimiter,
+  upload.single("logFile"),
+  uploadLog
+);
 
 // GET /api/logs/:fileId/analysis - Get analysis results
 router.get("/:fileId/analysis", authenticateToken, getAnalysis);
