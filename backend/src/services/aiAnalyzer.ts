@@ -7,7 +7,7 @@ import { AnomalyDetectionResult, ParsedLogEntry } from "../types";
  * AI USAGE DOCUMENTATION:
  * - Location: This service (backend/src/services/aiAnalyzer.ts)
  * - Purpose: Advanced pattern recognition, threat intelligence, and semantic analysis
- * - Model: OpenAI GPT-4 (gpt-4-turbo-preview)
+ * - Model: OpenAI GPT-4o (latest, most capable model as of Dec 2024)
  * - Input: Parsed log entries with statistical features
  * - Output: Anomaly classifications with confidence scores and human-readable explanations
  *
@@ -53,9 +53,9 @@ export class AIAnalyzer {
       // Prepare context for AI
       const context = this.prepareContext(sampledEntries, statisticalAnomalies);
 
-      // Call OpenAI API
+      // Call OpenAI API with latest GPT-4o model
       const response = await this.openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -111,7 +111,7 @@ export class AIAnalyzer {
       const keyEvents = this.extractKeyEvents(entries);
 
       const response = await this.openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
