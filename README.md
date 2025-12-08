@@ -1,15 +1,40 @@
 # Claude Log Analyzer
 
-A full-stack web application for analyzing log files with AI-powered anomaly detection, designed for SOC analysts.
+An enterprise-grade, full-stack web application for analyzing log files with AI-powered anomaly detection, designed for SOC analysts and security professionals.
 
-## Features
+## ✨ Features
 
-- **Authentication**: Basic authentication system for secure access
-- **Log Upload**: Support for various log formats (.txt, .log files)
-- **Intelligent Parsing**: Automatic log format detection and parsing
-- **Timeline Visualization**: Chronological view of events
-- **AI-Powered Anomaly Detection**: Machine learning-based detection of unusual patterns
-- **SOC Analyst Dashboard**: Key metrics and insights for security operations
+### Core Functionality
+
+- **🔐 Secure Authentication**: JWT-based auth with bcrypt password hashing
+- **📤 Log Upload**: Support for multiple log formats (.txt, .log files up to 50MB)
+- **🧠 Intelligent Parsing**: Automatic detection of Apache, ZScaler, and custom log formats
+- **📊 Interactive Visualizations**: 4 professional charts using Recharts
+  - Threat Severity Distribution (Pie Chart)
+  - Top 10 Source IPs (Bar Chart)
+  - HTTP Status Code Distribution (Bar Chart)
+  - HTTP Methods Analysis (Pie Chart)
+- **📅 Timeline Visualization**: Chronological view of security events with actual log timestamps
+- **🤖 Dual-Layer Anomaly Detection**: Statistical + AI-powered threat detection
+- **🎯 SOC Analyst Dashboard**: Comprehensive metrics, insights, and actionable recommendations
+
+### Security Features (Production-Ready)
+
+- **Rate Limiting**: 100 requests per 15 minutes per IP
+- **Security Headers**: Helmet.js for XSS, clickjacking protection
+- **Input Validation**: Express-validator on all endpoints
+- **SQL Injection Prevention**: Parameterized queries
+- **CORS Configuration**: Strict origin control
+- **No Hardcoded Credentials**: Environment-based configuration
+- **Session Security**: HTTP-only cookies, secure flags
+
+### Performance & Scalability
+
+- **Connection Pooling**: PostgreSQL connection management (10-20 connections)
+- **Async Processing**: Background log analysis
+- **Query Optimization**: Indexed database queries
+- **Efficient Parsing**: Stream-based log processing
+- **Docker Ready**: Full containerization support
 
 ## Technology Stack
 
@@ -29,9 +54,19 @@ A full-stack web application for analyzing log files with AI-powered anomaly det
 
 ### AI/ML
 
-- OpenAI GPT-4 API for advanced log analysis and anomaly detection
-- Pattern matching algorithms for statistical anomaly detection
-- Confidence scoring system
+- **OpenAI GPT-4o** (latest model, Dec 2024) for advanced log analysis
+- **Statistical Detection Engine**: 9 attack types with regex patterns
+- **Dual-Layer Approach**: Statistical + AI (optional with API key)
+- **Confidence Scoring**: 0-100% for each detected anomaly
+- **Pattern Matching**: SQL injection, XSS, brute force, path traversal, etc.
+
+### Security & Middleware
+
+- **Helmet.js**: Security headers (XSS, clickjacking protection)
+- **Express-rate-limit**: DDoS protection
+- **Express-validator**: Input sanitization
+- **Bcrypt**: Password hashing (10 rounds)
+- **JWT**: Secure token-based authentication
 
 ### Database
 
@@ -156,67 +191,126 @@ cp .env.example .env.local
 npm run dev
 ```
 
-## AI Model and Anomaly Detection
+## 🛡️ Anomaly Detection System
 
-### Approach
+### Dual-Layer Detection Approach
 
-Our anomaly detection system uses a multi-layered approach:
+#### Layer 1: Statistical Detection (Always Active)
 
-#### 1. Statistical Analysis
+**File**: `backend/src/services/productionAnomalyDetector.ts`
 
-- **Frequency Analysis**: Detects unusual spikes in request rates
-- **Time-based Patterns**: Identifies activities during unusual hours
-- **Geographic Anomalies**: Flags requests from unexpected locations
-- **Response Code Analysis**: Detects abnormal error rates
+Detects **9 attack types** using pattern matching:
 
-#### 2. AI-Powered Analysis (OpenAI GPT-4)
+1. **SQL Injection** - Regex patterns for UNION, OR '1'='1', DROP TABLE, etc.
+2. **XSS Attacks** - Detects `<script>`, `javascript:`, `onerror` patterns
+3. **Path Traversal** - Identifies `../`, `/etc/passwd` attempts
+4. **Brute Force** - Groups failed logins by IP (>5 attempts in 5 min)
+5. **Rate Limiting Violations** - High request rates (>100/min per IP)
+6. **Suspicious User-Agents** - Identifies sqlmap, nikto, nmap, burp
+7. **Error Rate Spikes** - 4xx/5xx rates exceeding 30%
+8. **Unusual Time Access** - Flags requests during 1am-5am
+9. **Geographic Anomalies** - Multiple unique IPs in short timeframe
 
-We leverage OpenAI's GPT-4 model to:
+**Confidence**: 70-95% based on pattern strength
 
-- Understand context and semantics of log entries
-- Identify complex attack patterns (SQL injection, XSS, path traversal)
-- Correlate multiple events to detect sophisticated threats
-- Generate human-readable explanations for detected anomalies
+#### Layer 2: AI-Powered Analysis (Optional - Requires API Key)
 
-**AI Usage Documentation**:
+**File**: `backend/src/services/aiAnalyzer.ts`  
+**Model**: OpenAI GPT-4o (latest, December 2024)
 
-- **Location**: `backend/src/services/aiAnalyzer.ts`
-- **Purpose**: Advanced pattern recognition and threat intelligence
-- **Input**: Parsed log entries with statistical features
-- **Output**: Anomaly classifications with confidence scores and explanations
+**What AI Adds**:
 
-#### 3. Confidence Scoring
+- Context-aware threat detection
+- Multi-stage attack correlation
+- Novel pattern recognition
+- Natural language explanations
+- Zero-day threat detection
 
-Each anomaly is assigned a confidence score (0-100%) based on:
+**How to Enable**: Add `OPENAI_API_KEY` to `backend/.env`
 
-- Statistical deviation from baseline
-- AI model confidence
-- Severity of the detected pattern
-- Number of corroborating indicators
+**AI is Optional**: The system works perfectly with statistical detection alone!
 
-### Example Anomalies Detected
+### Confidence Scoring
 
-1. **High Request Rate**: "Single IP made 500+ requests in 60 seconds" (95% confidence)
-2. **SQL Injection Attempt**: "URL contains SQL injection patterns" (88% confidence)
-3. **Unusual Access Time**: "Admin access at 3:47 AM, outside normal hours" (72% confidence)
-4. **Geographic Anomaly**: "First-time access from high-risk country" (81% confidence)
+Each anomaly receives a confidence score (0-100%):
 
-## Default Credentials
+- Statistical patterns: 70-95%
+- AI detections: Variable, model-determined
+- Combined: Highest confidence wins
 
-For testing purposes:
+### Example Detections
 
-- Username: `admin@example.com`
-- Password: `admin123`
+```
+SQL Injection Attempt
+- Type: sql_injection_attempt
+- Confidence: 85%
+- Severity: Critical
+- Description: "URL contains UNION SELECT pattern"
+- Source IP: 192.168.1.100
+- Recommendation: Block IP, enable WAF
 
-**⚠️ Change these credentials in production!**
+Brute Force Attack
+- Type: authentication_failures
+- Confidence: 95%
+- Severity: High
+- Description: "23 failed login attempts in 2 minutes"
+- Source IP: 10.0.0.50
+- Recommendation: Implement account lockout
+```
 
-## Example Log Files
+## 👤 User Management
+
+### Creating Users
+
+**Option 1: Registration Page**
+
+1. Navigate to http://localhost:3000/register
+2. Fill in name, email, and password
+3. Submit to create account
+
+**Option 2: API Registration**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"SecurePass123","name":"User Name"}'
+```
+
+**Option 3: Admin Setup Script**
+
+```bash
+cd backend
+node setup-admin.js
+```
+
+**Password Requirements**:
+
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one number
+
+**Security**: All passwords are hashed with bcrypt (10 rounds)
+
+## 📚 Documentation
+
+Comprehensive guides are available in the root directory:
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[SETUP.md](SETUP.md)** - Detailed setup instructions
+- **[AUTH-GUIDE.md](AUTH-GUIDE.md)** - Authentication system documentation
+- **[DATABASE.md](DATABASE.md)** - Database schema and queries
+- **[PRODUCTION.md](PRODUCTION.md)** - Production deployment guide
+- **[TESTING-GUIDE.md](TESTING-GUIDE.md)** - Testing procedures
+- **[REQUIREMENTS-CHECK.md](REQUIREMENTS-CHECK.md)** - Requirements compliance
+- **[IMPROVEMENTS.md](IMPROVEMENTS.md)** - Code improvements log
+
+## 📁 Example Log Files
 
 Sample log files are provided in the `examples/` directory:
 
-- `zscaler-proxy.log` - ZScaler Web Proxy logs
-- `apache-access.log` - Apache web server logs
-- `application.log` - Generic application logs
+- `sample_logs.txt` - Mixed format logs with various attacks
+- `anomalous_logss.txt` - Logs with SQL injection, XSS attempts
+- `hard_logs.txt` - Complex attack patterns
 
 ## API Documentation
 
