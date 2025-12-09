@@ -1,13 +1,13 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { AnomalyDetectionResult, ParsedLogEntry } from "../types";
 
 /**
- * AI-Powered Anomaly Detection Service using OpenAI GPT-4
+ * AI-Powered Anomaly Detection Service using Claude (Anthropic)
  *
  * AI USAGE DOCUMENTATION:
  * - Location: This service (backend/src/services/aiAnalyzer.ts)
  * - Purpose: Advanced pattern recognition, threat intelligence, and semantic analysis
- * - Model: OpenAI GPT-4o (latest, most capable model as of Dec 2024)
+ * - Model: Claude 3.5 Sonnet (latest, most capable model as of Dec 2024)
  * - Input: Parsed log entries with statistical features
  * - Output: Anomaly classifications with confidence scores and human-readable explanations
  *
@@ -20,15 +20,15 @@ import { AnomalyDetectionResult, ParsedLogEntry } from "../types";
  */
 
 export class AIAnalyzer {
-  private openai: OpenAI | null = null;
+  private anthropic: Anthropic | null = null;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey && apiKey !== "your-openai-api-key-here") {
-      this.openai = new OpenAI({ apiKey });
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (apiKey && apiKey !== "your-anthropic-api-key-here") {
+      this.anthropic = new Anthropic({ apiKey });
     } else {
       console.warn(
-        "OpenAI API key not configured. AI-powered analysis will be limited."
+        "Anthropic API key not configured. AI-powered analysis will be limited."
       );
     }
   }
@@ -40,13 +40,13 @@ export class AIAnalyzer {
     entries: ParsedLogEntry[],
     statisticalAnomalies: AnomalyDetectionResult[]
   ): Promise<AnomalyDetectionResult[]> {
-    if (!this.openai) {
-      console.log("AI analysis skipped - OpenAI not configured");
+    if (!this.anthropic) {
+      console.log("AI analysis skipped - Claude not configured");
       return [];
     }
 
     try {
-      console.log("🤖 Starting AI-powered anomaly detection...");
+      console.log("🤖 Starting AI-powered anomaly detection with Claude...");
       
       // Sample entries for AI analysis (to avoid token limits)
       const sampleSize = Math.min(100, entries.length);
@@ -56,47 +56,44 @@ export class AIAnalyzer {
       // Prepare context for AI
       const context = this.prepareContext(sampledEntries, statisticalAnomalies);
       console.log(`📝 Context prepared (${context.length} characters)`);
-      console.log(`🔍 Sending request to OpenAI GPT-4o...`);
+      console.log(`🔍 Sending request to Claude 3.5 Sonnet...`);
 
-      // Call OpenAI API with latest GPT-4o model
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
+      // Call Claude API with Claude 3 Haiku (fastest, most widely available)
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 4096,
+        temperature: 0.3,
+        system: `You are a cybersecurity expert analyzing web server logs for security threats and anomalies. 
+        Your task is to identify potential security issues, attack patterns, and unusual behaviors.
+        Focus on:
+        - SQL injection attempts
+        - Cross-site scripting (XSS)
+        - Brute force attacks
+        - Data exfiltration patterns
+        - Unusual access patterns
+        - Privilege escalation attempts
+        - Session hijacking indicators
+        
+        Respond in JSON format with an array of anomalies. Each anomaly should have:
+        - type: string (e.g., "sql_injection", "brute_force", "data_exfiltration")
+        - description: string (clear explanation for SOC analysts)
+        - confidence: number (0-100)
+        - severity: string ("low", "medium", "high", "critical")
+        - evidence: array of log entry indices or patterns that support this finding`,
         messages: [
-          {
-            role: "system",
-            content: `You are a cybersecurity expert analyzing web server logs for security threats and anomalies. 
-            Your task is to identify potential security issues, attack patterns, and unusual behaviors.
-            Focus on:
-            - SQL injection attempts
-            - Cross-site scripting (XSS)
-            - Brute force attacks
-            - Data exfiltration patterns
-            - Unusual access patterns
-            - Privilege escalation attempts
-            - Session hijacking indicators
-            
-            Respond in JSON format with an array of anomalies. Each anomaly should have:
-            - type: string (e.g., "sql_injection", "brute_force", "data_exfiltration")
-            - description: string (clear explanation for SOC analysts)
-            - confidence: number (0-100)
-            - severity: string ("low", "medium", "high", "critical")
-            - evidence: array of log entry indices or patterns that support this finding`,
-          },
           {
             role: "user",
             content: context,
           },
         ],
-        temperature: 0.3, // Lower temperature for more consistent analysis
-        max_tokens: 2000,
       });
 
-      console.log(`✅ OpenAI response received!`);
+      console.log(`✅ Claude response received!`);
       console.log(`📊 Usage: ${JSON.stringify(response.usage)}`);
       
-      const aiResponse = response.choices[0]?.message?.content;
+      const aiResponse = response.content[0]?.type === 'text' ? response.content[0].text : '';
       if (!aiResponse) {
-        console.warn("⚠️  No content in OpenAI response");
+        console.warn("⚠️  No content in Claude response");
         return [];
       }
 
@@ -111,7 +108,7 @@ export class AIAnalyzer {
     } catch (error: any) {
       console.error("❌ Error in AI analysis:", error.message);
       if (error.response) {
-        console.error("OpenAI API Error:", error.response.status, error.response.data);
+        console.error("Claude API Error:", error.response.status, error.response.data);
       }
       return [];
     }
@@ -121,32 +118,28 @@ export class AIAnalyzer {
    * Generate a timeline summary using AI
    */
   async generateTimelineSummary(entries: ParsedLogEntry[]): Promise<string> {
-    if (!this.openai) {
+    if (!this.anthropic) {
       return this.generateBasicTimeline(entries);
     }
 
     try {
       const keyEvents = this.extractKeyEvents(entries);
 
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 1024,
+        temperature: 0.5,
+        system: "You are a SOC analyst creating a concise timeline summary of security events. Highlight the most important events and their implications.",
         messages: [
-          {
-            role: "system",
-            content:
-              "You are a SOC analyst creating a concise timeline summary of security events. Highlight the most important events and their implications.",
-          },
           {
             role: "user",
             content: `Analyze these log events and create a brief timeline summary (2-3 paragraphs):\n\n${keyEvents}`,
           },
         ],
-        temperature: 0.5,
-        max_tokens: 500,
       });
 
       return (
-        response.choices[0]?.message?.content ||
+        (response.content[0]?.type === 'text' ? response.content[0].text : '') ||
         this.generateBasicTimeline(entries)
       );
     } catch (error) {

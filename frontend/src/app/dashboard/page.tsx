@@ -22,6 +22,7 @@ interface Anomaly {
   confidence: number;
   severity: string;
   timestamp?: string;
+  isAI?: boolean;  // Flag to indicate if detected by AI
 }
 
 interface LogEntry {
@@ -46,6 +47,7 @@ interface Analysis {
   anomalies: Anomaly[];
   timeline?: TimelineEvent[];
   parsedLogs?: LogEntry[];
+  aiAnalysisSkipped?: boolean;  // Flag if AI was skipped
   summary: {
     high_risk: number;
     medium_risk: number;
@@ -53,6 +55,8 @@ interface Analysis {
     top_sources?: Array<{ ip: string; count: number }>;
     unique_ips?: number;
     error_rate?: number;
+    status_distribution?: Record<string, number>;
+    methods?: Record<string, number>;
   };
 }
 
@@ -126,8 +130,9 @@ export default function Dashboard() {
           total_entries: data.analysis?.total_entries || 0,
           anomalies:
             data.anomalies?.map((a: any) => {
-              // Extract event timestamp from details (actual log time)
+              // Extract event timestamp and AI flag from details
               let eventTimestamp = null;
+              let isAI = false;
               try {
                 const details =
                   typeof a.details === "string"
@@ -137,6 +142,7 @@ export default function Dashboard() {
                   details?.event_timestamp ||
                   details?.timestamp ||
                   details?.firstAttempt;
+                isAI = details?.ai_generated === true;
               } catch (e) {
                 console.error("Error parsing anomaly details:", e);
               }
@@ -147,6 +153,7 @@ export default function Dashboard() {
                 confidence: parseFloat(a.confidence_score || a.confidence || 0),
                 severity: a.severity,
                 timestamp: eventTimestamp, // Use actual log time
+                isAI: isAI,  // AI-detected flag
               };
             }) || [],
           timeline: data.analysis?.timeline || [],
@@ -630,20 +637,47 @@ export default function Dashboard() {
 
             {/* Anomalies */}
             <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                🚨 Detected Anomalies ({analysis.anomalies?.length || 0})
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  🚨 Detected Anomalies ({analysis.anomalies?.length || 0})
+                </h2>
+                {/* Legend */}
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-semibold">🤖 AI</span>
+                    <span className="text-gray-600">Claude Powered</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-semibold">📊 Statistical</span>
+                    <span className="text-gray-600">Pattern Matching</span>
+                  </div>
+                </div>
+              </div>
 
               {analysis.anomalies && analysis.anomalies.length > 0 ? (
                 <div className="space-y-4">
                   {analysis.anomalies.map((anomaly, index) => (
                     <div
                       key={index}
-                      className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
+                      className={`border-2 rounded-lg p-6 hover:shadow-md transition ${
+                        anomaly.isAI 
+                          ? 'border-purple-200 bg-purple-50/30' 
+                          : 'border-gray-200 bg-white'
+                      }`}
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
+                            {/* Detection Method Badge */}
+                            {anomaly.isAI ? (
+                              <span className="px-3 py-1 bg-purple-500 text-white rounded-md text-xs font-bold flex items-center gap-1">
+                                🤖 AI Powered
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 bg-gray-500 text-white rounded-md text-xs font-bold flex items-center gap-1">
+                                📊 Statistical
+                              </span>
+                            )}
                             <h3 className="text-lg font-bold text-gray-900">
                               {anomaly.type}
                             </h3>
@@ -655,7 +689,7 @@ export default function Dashboard() {
                               {anomaly.severity}
                             </span>
                           </div>
-                          <p className="text-gray-700">{anomaly.description}</p>
+                          <p className="text-gray-700 mt-2">{anomaly.description}</p>
                         </div>
                         <div className="ml-4 text-right">
                           <div className="text-2xl font-bold text-blue-600">
