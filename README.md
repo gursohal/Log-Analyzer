@@ -54,11 +54,12 @@ An enterprise-grade, full-stack web application for analyzing log files with AI-
 
 ### AI/ML
 
-- **OpenAI GPT-4o** (latest model, Dec 2024) for advanced log analysis
+- **Anthropic Claude 3 Haiku** (fast, cost-effective AI model) for advanced log analysis
 - **Statistical Detection Engine**: 9 attack types with regex patterns
 - **Dual-Layer Approach**: Statistical + AI (optional with API key)
 - **Confidence Scoring**: 0-100% for each detected anomaly
 - **Pattern Matching**: SQL injection, XSS, brute force, path traversal, etc.
+- **Visual Distinction**: Clear UI badges showing AI vs Statistical detections
 
 ### Security & Middleware
 
@@ -105,7 +106,7 @@ claude-log-analyzer/
 - Node.js 18+ and npm
 - PostgreSQL 14+
 - Docker and Docker Compose (optional)
-- OpenAI API key (for AI features)
+- Anthropic Claude API key (for AI features - optional)
 
 ### Quick Start with Docker
 
@@ -216,19 +217,49 @@ Detects **9 attack types** using pattern matching:
 #### Layer 2: AI-Powered Analysis (Optional - Requires API Key)
 
 **File**: `backend/src/services/aiAnalyzer.ts`  
-**Model**: OpenAI GPT-4o (latest, December 2024)
+**Model**: Anthropic Claude 3 Haiku (fast, cost-effective, December 2024)
 
 **What AI Adds**:
 
-- Context-aware threat detection
-- Multi-stage attack correlation
-- Novel pattern recognition
-- Natural language explanations
-- Zero-day threat detection
+- **Context-aware threat detection** - Understands relationships between log entries
+- **Multi-stage attack correlation** - Identifies reconnaissance → exploitation chains
+- **Novel pattern recognition** - Detects zero-day and unknown threats
+- **Natural language explanations** - Clear, actionable descriptions for SOC analysts
+- **Semantic analysis** - Goes beyond pattern matching to understand intent
 
-**How to Enable**: Add `OPENAI_API_KEY` to `backend/.env`
+**How It Works**:
 
-**AI is Optional**: The system works perfectly with statistical detection alone!
+1. Statistical detector runs first, finding known patterns
+2. Claude receives:
+   - Statistical anomalies detected
+   - Sample of log entries (up to 100)
+   - Context about attack patterns
+3. Claude analyzes for:
+   - Missed threats
+   - Correlation between events
+   - Attack sophistication level
+   - Recommendations
+
+**How to Enable**:
+
+1. Get API key from https://console.anthropic.com/
+2. Add to `backend/.env`: `ANTHROPIC_API_KEY=sk-ant-api03-your-key-here`
+3. Restart backend server
+4. Look for purple "🤖 AI Powered" badges on dashboard!
+
+**Cost**: ~$0.01-0.05 per log file analysis (Claude Haiku pricing)
+
+**AI is Optional**: The system works perfectly with statistical detection alone! If no API key is provided, you'll see a helpful warning banner with setup instructions.
+
+### Visual Distinction on Dashboard
+
+The UI clearly distinguishes between detection methods:
+
+- **🤖 AI Powered** (Purple badge) - Claude-detected anomalies with detailed context
+- **📊 Statistical** (Gray badge) - Pattern-matching detections
+- **🤖📊 Both Methods** (Gradient badge) - Confirmed by both approaches (highest confidence!)
+
+Anomalies detected by both methods are automatically deduplicated and display the AI's more detailed description.
 
 ### Confidence Scoring
 
