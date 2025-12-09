@@ -13,12 +13,13 @@ export const authenticateToken = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
   if (!token) {
-    return res.status(401).json({ error: "Access token required" });
+    res.status(401).json({ error: "Access token required" });
+    return;
   }
 
   try {
@@ -28,7 +29,8 @@ export const authenticateToken = (
     if (!secret || secret === "your-secret-key") {
       console.error("CRITICAL: JWT_SECRET not configured properly!");
       if (process.env.NODE_ENV === "production") {
-        return res.status(500).json({ error: "Server configuration error" });
+        res.status(500).json({ error: "Server configuration error" });
+        return;
       }
     }
 
@@ -39,17 +41,21 @@ export const authenticateToken = (
 
     // Additional validation
     if (!decoded.userId || !decoded.email) {
-      return res.status(403).json({ error: "Invalid token payload" });
+      res.status(403).json({ error: "Invalid token payload" });
+      return;
     }
 
     req.user = decoded;
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ error: "Token expired" });
+      res.status(401).json({ error: "Token expired" });
+      return;
     } else if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(403).json({ error: "Invalid token" });
+      res.status(403).json({ error: "Invalid token" });
+      return;
     }
-    return res.status(403).json({ error: "Authentication failed" });
+    res.status(403).json({ error: "Authentication failed" });
+    return;
   }
 };

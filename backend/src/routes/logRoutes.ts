@@ -23,10 +23,10 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(
       null,
@@ -35,7 +35,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (req: any, file: any, cb: any) => {
+const fileFilter = (_req: any, file: any, cb: any) => {
   // Accept log files, txt files, and other common formats
   const allowedExtensions = [".log", ".txt", ".csv"];
   const ext = path.extname(file.originalname).toLowerCase();

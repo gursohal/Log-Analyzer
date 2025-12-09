@@ -74,7 +74,7 @@ if (!fs.existsSync(uploadDir)) {
 /**
  * Routes
  */
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.json({
     message: "Claude Log Analyzer API",
     version: "1.0.0",
@@ -92,7 +92,7 @@ app.use("/api/logs", logRoutes);
 /**
  * Health check endpoint
  */
-app.get("/health", async (req, res) => {
+app.get("/health", async (_req, res) => {
   try {
     // Check database connection
     await pool.query("SELECT 1");
@@ -108,23 +108,26 @@ app.get("/health", async (req, res) => {
 app.use(
   (
     err: any,
-    req: express.Request,
+    _req: express.Request,
     res: express.Response,
-    next: express.NextFunction
-  ) => {
+    _next: express.NextFunction
+  ): void => {
     console.error("Error:", err);
 
     // Handle Multer errors
     if (err.name === "MulterError") {
       if (err.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({ error: "File is too large" });
+        res.status(400).json({ error: "File is too large" });
+        return;
       }
-      return res.status(400).json({ error: err.message });
+      res.status(400).json({ error: err.message });
+      return;
     }
 
     // Handle CORS errors
     if (err.message === "Not allowed by CORS") {
-      return res.status(403).json({ error: "Origin not allowed" });
+      res.status(403).json({ error: "Origin not allowed" });
+      return;
     }
 
     // Sanitize error messages in production
@@ -140,7 +143,7 @@ app.use(
 /**
  * 404 handler
  */
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({ error: "Endpoint not found" });
 });
 

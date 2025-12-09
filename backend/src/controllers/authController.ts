@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import { query } from "../config/database";
 
 /**
@@ -8,20 +8,22 @@ import { query } from "../config/database";
  * Handles user login and authentication
  */
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      res.status(400).json({ error: "Email and password are required" });
+      return;
     }
 
     // Find user
     const result = await query("SELECT * FROM users WHERE email = $1", [email]);
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
     }
 
     const user = result.rows[0];
@@ -30,12 +32,12 @@ export const login = async (req: Request, res: Response) => {
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!isValidPassword) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
     }
 
     // Generate JWT token
     const secret = process.env.JWT_SECRET || "your-secret-key";
-    const expiresIn = process.env.JWT_EXPIRES_IN || "7d";
 
     const token = jwt.sign(
       {
@@ -43,7 +45,7 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
       },
       secret,
-      { expiresIn }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as SignOptions
     );
 
     // Return user data and token
@@ -61,13 +63,14 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name } = req.body;
 
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      res.status(400).json({ error: "Email and password are required" });
+      return;
     }
 
     // Check if user already exists
@@ -76,7 +79,8 @@ export const register = async (req: Request, res: Response) => {
     ]);
 
     if (existingUser.rows.length > 0) {
-      return res.status(409).json({ error: "User already exists" });
+      res.status(409).json({ error: "User already exists" });
+      return;
     }
 
     // Hash password
@@ -92,7 +96,6 @@ export const register = async (req: Request, res: Response) => {
 
     // Generate JWT token
     const secret = process.env.JWT_SECRET || "your-secret-key";
-    const expiresIn = process.env.JWT_EXPIRES_IN || "7d";
 
     const token = jwt.sign(
       {
@@ -100,7 +103,7 @@ export const register = async (req: Request, res: Response) => {
         email: user.email,
       },
       secret,
-      { expiresIn }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as SignOptions
     );
 
     res.status(201).json({
@@ -117,7 +120,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const verifyToken = async (req: Request, res: Response) => {
+export const verifyToken = async (req: Request, res: Response): Promise<void> => {
   try {
     // Token is already verified by authenticateToken middleware
     // Just return user info
@@ -129,7 +132,8 @@ export const verifyToken = async (req: Request, res: Response) => {
       );
 
       if (result.rows.length > 0) {
-        return res.json({ user: result.rows[0] });
+        res.json({ user: result.rows[0] });
+        return;
       }
     }
 

@@ -136,7 +136,7 @@ export class ReportGenerator {
    */
   private extractIndicators(
     anomaly: AnomalyDetectionResult,
-    entries: ParsedLogEntry[]
+    _entries: ParsedLogEntry[]
   ): string[] {
     const indicators: string[] = [];
 

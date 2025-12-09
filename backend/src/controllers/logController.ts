@@ -18,14 +18,16 @@ const anomalyDetector = new ProductionAnomalyDetector();
 const aiAnalyzer = new AIAnalyzer();
 const reportGenerator = new ReportGenerator();
 
-export const uploadLog = async (req: AuthRequest, res: Response) => {
+export const uploadLog = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+      res.status(400).json({ error: "No file uploaded" });
+      return;
     }
 
     if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
     const userId = req.user.userId;
@@ -35,7 +37,8 @@ export const uploadLog = async (req: AuthRequest, res: Response) => {
     const maxSize = parseInt(process.env.MAX_FILE_SIZE || "10485760"); // 10MB
     if (file.size > maxSize) {
       fs.unlinkSync(file.path); // Delete uploaded file
-      return res.status(400).json({ error: "File too large" });
+      res.status(400).json({ error: "File too large" });
+      return;
     }
 
     // Save file metadata to database
@@ -196,10 +199,11 @@ async function processLogFile(fileId: string, filePath: string) {
 /**
  * Get analysis results
  */
-export const getAnalysis = async (req: AuthRequest, res: Response) => {
+export const getAnalysis = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
     const fileId = req.params.fileId;
@@ -211,25 +215,28 @@ export const getAnalysis = async (req: AuthRequest, res: Response) => {
     );
 
     if (fileResult.rows.length === 0) {
-      return res.status(404).json({ error: "Log file not found" });
+      res.status(404).json({ error: "Log file not found" });
+      return;
     }
 
     const logFile = fileResult.rows[0];
 
     // If still processing, return status
     if (logFile.status === "processing") {
-      return res.json({
+      res.json({
         status: "processing",
         message: "Log file is still being processed",
       });
+      return;
     }
 
     // If failed, return error
     if (logFile.status === "failed") {
-      return res.status(500).json({
+      res.status(500).json({
         status: "failed",
         error: "Log file processing failed",
       });
+      return;
     }
 
     // Get analysis results
@@ -239,7 +246,8 @@ export const getAnalysis = async (req: AuthRequest, res: Response) => {
     );
 
     if (analysisResult.rows.length === 0) {
-      return res.status(404).json({ error: "Analysis not found" });
+      res.status(404).json({ error: "Analysis not found" });
+      return;
     }
 
     const analysis = analysisResult.rows[0];
@@ -279,10 +287,11 @@ export const getAnalysis = async (req: AuthRequest, res: Response) => {
 /**
  * Get user's log files
  */
-export const getUserLogs = async (req: AuthRequest, res: Response) => {
+export const getUserLogs = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
     const result = await query(

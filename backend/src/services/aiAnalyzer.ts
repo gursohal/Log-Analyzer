@@ -46,12 +46,17 @@ export class AIAnalyzer {
     }
 
     try {
+      console.log("🤖 Starting AI-powered anomaly detection...");
+      
       // Sample entries for AI analysis (to avoid token limits)
       const sampleSize = Math.min(100, entries.length);
       const sampledEntries = this.sampleEntries(entries, sampleSize);
+      console.log(`📊 Sampled ${sampledEntries.length} entries from ${entries.length} total`);
 
       // Prepare context for AI
       const context = this.prepareContext(sampledEntries, statisticalAnomalies);
+      console.log(`📝 Context prepared (${context.length} characters)`);
+      console.log(`🔍 Sending request to OpenAI GPT-4o...`);
 
       // Call OpenAI API with latest GPT-4o model
       const response = await this.openai.chat.completions.create({
@@ -86,15 +91,28 @@ export class AIAnalyzer {
         max_tokens: 2000,
       });
 
+      console.log(`✅ OpenAI response received!`);
+      console.log(`📊 Usage: ${JSON.stringify(response.usage)}`);
+      
       const aiResponse = response.choices[0]?.message?.content;
       if (!aiResponse) {
+        console.warn("⚠️  No content in OpenAI response");
         return [];
       }
 
+      console.log(`📄 Response length: ${aiResponse.length} characters`);
+      console.log(`🔍 Raw AI Response:\n${aiResponse.substring(0, 500)}...`);
+
       // Parse AI response
-      return this.parseAIResponse(aiResponse);
+      const anomalies = this.parseAIResponse(aiResponse);
+      console.log(`✨ Parsed ${anomalies.length} AI-detected anomalies`);
+      
+      return anomalies;
     } catch (error: any) {
-      console.error("Error in AI analysis:", error.message);
+      console.error("❌ Error in AI analysis:", error.message);
+      if (error.response) {
+        console.error("OpenAI API Error:", error.response.status, error.response.data);
+      }
       return [];
     }
   }
@@ -269,10 +287,10 @@ export class AIAnalyzer {
     }
 
     const timeRange =
-      entries[0].timestamp && entries[entries.length - 1].timestamp
+      entries[0]?.timestamp && entries[entries.length - 1]?.timestamp
         ? `from ${entries[0].timestamp.toISOString()} to ${entries[
             entries.length - 1
-          ].timestamp.toISOString()}`
+          ].timestamp?.toISOString()}`
         : "with unknown time range";
 
     const uniqueIPs = new Set(entries.map((e) => e.ip).filter(Boolean));
