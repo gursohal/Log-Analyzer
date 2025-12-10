@@ -109,25 +109,26 @@ async function processLogFile(fileId: string, filePath: string) {
     // Run statistical anomaly detection
     const statisticalAnomalies = anomalyDetector.detectAnomalies(entries);
 
-    // Run AI-powered analysis
+    // Run AI-powered analysis (for separate viewing only, not included in calculations)
     const aiAnomalies = await aiAnalyzer.analyzeWithAI(
       entries,
       statisticalAnomalies
     );
 
-    // Combine anomalies
+    // IMPORTANT: Only use statisticalAnomalies for all calculations
+    // AI anomalies are stored separately for viewing only
     const allAnomalies = [...statisticalAnomalies, ...aiAnomalies];
 
-    // Generate comprehensive SOC report
-    const socReport = reportGenerator.generateSOCReport(allAnomalies, entries);
+    // Generate SOC report using ONLY statistical anomalies
+    const socReport = reportGenerator.generateSOCReport(statisticalAnomalies, entries);
 
     // Calculate statistics
     const statistics = anomalyDetector.calculateStatistics(entries);
 
-    // Generate timeline
-    const timeline = generateTimeline(entries, allAnomalies);
+    // Generate timeline using ONLY statistical anomalies
+    const timeline = generateTimeline(entries, statisticalAnomalies);
 
-    // Generate summary
+    // Generate summary using ONLY statistical anomalies
     const summary = {
       total_requests: entries.length,
       unique_ips: statistics.uniqueIPs,

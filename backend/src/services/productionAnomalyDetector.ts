@@ -99,6 +99,7 @@ export class ProductionAnomalyDetector {
 
   /**
    * Detect scanner activity - FIXED SEVERITY TO HIGH
+   * FIXED: Track each scanner type separately per IP
    */
   private detectScannerActivity(
     entries: ParsedLogEntry[]
@@ -114,9 +115,11 @@ export class ProductionAnomalyDetector {
       nessus: /nessus/i,
     };
 
+    // Track by IP + scanner type combination
     const ipScannerActivity = new Map<
-      string,
+      string, // key: "IP:scanner"
       {
+        ip: string;
         scanner: string;
         count: number;
         urls: Set<string>;
@@ -130,8 +133,11 @@ export class ProductionAnomalyDetector {
 
       for (const [scannerName, pattern] of Object.entries(scannerPatterns)) {
         if (pattern.test(entry.user_agent)) {
-          if (!ipScannerActivity.has(entry.ip)) {
-            ipScannerActivity.set(entry.ip, {
+          const key = `${entry.ip}:${scannerName}`;
+          
+          if (!ipScannerActivity.has(key)) {
+            ipScannerActivity.set(key, {
+              ip: entry.ip,
               scanner: scannerName,
               count: 0,
               urls: new Set(),
@@ -139,15 +145,16 @@ export class ProductionAnomalyDetector {
               userAgent: entry.user_agent,
             });
           }
-          const activity = ipScannerActivity.get(entry.ip)!;
+          const activity = ipScannerActivity.get(key)!;
           activity.count++;
           if (entry.url) activity.urls.add(entry.url);
           if (entry.timestamp) activity.timestamps.push(entry.timestamp);
+          break; // Only match first scanner pattern per entry
         }
       }
     }
 
-    for (const [ip, activity] of ipScannerActivity.entries()) {
+    for (const [_, activity] of ipScannerActivity.entries()) {
       // Enhanced confidence based on scanner detection
       let confidence = 88; // Base confidence for scanner detection
       if (activity.count >= 10) confidence = 95; // Definite scanner
@@ -156,11 +163,11 @@ export class ProductionAnomalyDetector {
       // Scanner activity is always HIGH severity
       const severity = "high";
 
-      let description = `Automated ${activity.scanner} scanner from ${ip}`;
-      description += `: ${activity.count} requests`;
+      let description = `${activity.scanner.charAt(0).toUpperCase() + activity.scanner.slice(1)} scanner from ${activity.ip}`;
+      description += `: ${activity.count} request${activity.count > 1 ? 's' : ''}`;
 
-      if (activity.urls.size > 5) {
-        description += `, scanning ${activity.urls.size} endpoints`;
+      if (activity.urls.size > 3) {
+        description += `, targeting ${activity.urls.size} endpoints`;
       }
 
       // Use earliest timestamp from activity
@@ -175,7 +182,7 @@ export class ProductionAnomalyDetector {
         confidence,
         severity,
         details: {
-          ip,
+          ip: activity.ip,
           scannerType: activity.scanner,
           requestCount: activity.count,
           uniqueUrls: activity.urls.size,
@@ -196,6 +203,7 @@ export class ProductionAnomalyDetector {
 
   /**
    * Detect suspicious URLs - FIXED SEVERITY FOR PATH TRAVERSAL
+   * ADDED: Command injection detection
    */
   private detectSuspiciousUrls(
     entries: ParsedLogEntry[]
@@ -219,7 +227,18 @@ export class ProductionAnomalyDetector {
 
     const pathTraversalPatterns = [
       { pattern: /\.\.\//g, name: "Parent Directory", confidence: 90 },
-      { pattern: /etc\/passwd/i, name: "System File Access", confidence: 95 },
+      { pattern: /etc\/passwd/i, name: "System File (/etc/passwd)", confidence: 95 },
+      { pattern: /etc\/shadow/i, name: "System File (/etc/shadow)", confidence: 95 },
+      { pattern: /var\/log/i, name: "Log File Access", confidence: 92 },
+    ];
+
+    const commandInjectionPatterns = [
+      { pattern: /exec=.*bash/i, name: "Bash Execution", confidence: 95 },
+      { pattern: /exec=.*nc\s+-e/i, name: "Reverse Shell (nc)", confidence: 98 },
+      { pattern: /cmd=.*curl/i, name: "Remote Code Execution", confidence: 95 },
+      { pattern: /cmd=.*\$/i, name: "Command Substitution", confidence: 93 },
+      { pattern: /nc\s+-e.*bash/i, name: "Netcat Reverse Shell", confidence: 98 },
+      { pattern: /bash\s+-[ic]/i, name: "Interactive Bash", confidence: 90 },
     ];
 
     for (let i = 0; i < entries.length; i++) {
@@ -293,6 +312,29 @@ export class ProductionAnomalyDetector {
               event_timestamp: entry.timestamp?.toISOString(),
               entryIndex: i, // Exact index of the matching entry
               matchedUrl: url, // Explicitly store the matched URL
+            },
+          });
+          break;
+        }
+      }
+
+      // Command injection - HIGH severity (NEW)
+      for (const { pattern, name, confidence } of commandInjectionPatterns) {
+        if (pattern.test(url)) {
+          anomalies.push({
+            type: "command_injection_attempt",
+            description: `Command Injection (${name}) from ${ip}: ${url.substring(0, 80)}`,
+            confidence,
+            severity: "high",
+            details: {
+              ip,
+              url,
+              method: entry.method,
+              status: entry.status,
+              pattern: name,
+              timestamp: entry.timestamp?.toISOString(),
+              event_timestamp: entry.timestamp?.toISOString(),
+              entryIndex: i,
             },
           });
           break;

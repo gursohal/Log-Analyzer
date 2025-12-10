@@ -1,17 +1,11 @@
 # Claude Log Analyzer - Setup Guide
 
-## Quick Start Guide
-
-This guide will help you get the Claude Log Analyzer up and running locally.
-
 ## Prerequisites
 
-- **Node.js** 18+ and npm
-- **PostgreSQL** 14+ (or use Docker)
-- **Docker & Docker Compose** (recommended)
-- **OpenAI API Key** (optional, for AI-powered analysis)
+- **Docker Desktop** (latest version - the UX will display if it's not updated)
+- **Anthropic Claude API Key** (optional, for AI-powered analysis)
 
-## Option 1: Docker Setup (Recommended)
+## Docker Setup (Recommended)
 
 ### Step 1: Clone and Setup
 
@@ -21,27 +15,39 @@ cd claude-log-analyzer
 
 ### Step 2: Configure Environment Variables
 
-Create backend environment file:
+**Create backend environment file:**
 
 ```bash
 cd backend
+# Windows
+copy .env.example .env
+
+# Linux/Mac
 cp .env.example .env
 ```
 
-Edit `backend/.env` and add your OpenAI API key:
+**Edit backend/.env and add your Claude API key:**
 
 ```
-OPENAI_API_KEY=your-actual-openai-api-key-here
+ANTHROPIC_API_KEY=sk-ant-api03-your-actual-api-key-here
 ```
 
-Create frontend environment file:
+> **Note**: Get your API key from https://console.anthropic.com/
+
+**Create frontend environment file:**
 
 ```bash
 cd ../frontend
+# Windows
+copy .env.local.example .env.local
+
+# Linux/Mac
 cp .env.local.example .env.local
 ```
 
 ### Step 3: Start with Docker Compose
+
+**Important**: Make sure your Docker Desktop is updated to the latest version. The UX will display if it's not updated.
 
 From the root directory:
 
@@ -59,160 +65,210 @@ This will start:
 
 Open your browser and navigate to:
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
+- **Frontend**: http://localhost:3000/login
 
-### Step 5: Login
+### Step 5: Register & Login
 
-Use the default credentials:
+1. Click on the **Register** button
+2. Register with your username and email
+3. Login with those credentials
 
-- **Email**: admin@example.com
-- **Password**: admin123
+## What Happens After Setup
 
-## Option 2: Manual Setup
+Once logged in, you can:
 
-### Step 1: Setup PostgreSQL Database
+1. **Upload Log Files** - Drag and drop or click to upload .txt or .log files (up to 50MB)
+2. **View Analysis** - The system automatically:
+   - Parses your logs
+   - Runs statistical anomaly detection (always active)
+   - Runs AI-powered analysis with Claude (if API key is configured)
+3. **Explore Results** - View:
+   - Timeline of security events
+   - Detected anomalies with confidence scores
+   - Interactive charts and visualizations
+   - SOC analyst-ready insights
 
-Create a new database:
+## AI-Powered Analysis
 
-```bash
-createdb log_analyzer
-```
+### With Claude API Key (Recommended)
 
-Run the schema:
+When you configure `ANTHROPIC_API_KEY`:
 
-```bash
-psql -d log_analyzer -f database/schema.sql
-```
+- ✅ **Dual-layer detection**: Statistical + AI
+- ✅ **Context-aware analysis**: Claude understands attack patterns
+- ✅ **Natural language explanations**: Clear, actionable descriptions
+- ✅ **Novel threat detection**: Identifies zero-day attacks
+- ✅ **Purple "🤖 AI Powered" badges** on anomalies
 
-### Step 2: Backend Setup
+**Cost**: ~$0.01-0.05 per log file analysis (Claude Haiku pricing)
 
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Edit .env with your configurations
-npm run dev
-```
+### Without Claude API Key
 
-The backend will start on http://localhost:5000
+The system works perfectly without an API key:
 
-### Step 3: Frontend Setup
+- ✅ **Statistical detection**: Pattern matching for 9 attack types
+- ✅ **Gray "📊 Statistical" badges** on anomalies
+- ⚠️ **Warning banner** will explain how to enable AI
 
-```bash
-cd frontend
-npm install
-cp .env.local.example .env.local
-npm run dev
-```
+## Visual Distinction
 
-The frontend will start on http://localhost:3000
+The dashboard clearly shows which method detected each anomaly:
+
+| Badge | Meaning |
+|-------|---------|
+| 🤖 **AI Powered** (Purple) | Detected by Claude with contextual analysis |
+| 📊 **Statistical** (Gray) | Detected by pattern matching |
+| 🤖📊 **Both Methods** (Gradient) | Confirmed by both (highest confidence!) |
 
 ## Testing the Application
 
-### 1. Login
+### Use Example Log Files
 
-Navigate to http://localhost:3000 and login with:
+Sample log files are provided in the `examples/` directory:
 
-- Email: admin@example.com
-- Password: admin123
+- `sample_logs.txt` - Mixed format logs with various attacks
+- `anomalous_logss.txt` - Logs with SQL injection, XSS attempts
+- `hard_logs.txt` - Complex attack patterns
 
-### 2. Upload a Log File
+### Expected Results
 
-Use the example log file provided:
+After uploading a log file, you'll see:
 
-- Navigate to the examples directory
-- Upload `apache-access.log` through the dashboard
+1. **Upload Progress**: Real-time status updates
+2. **Analysis Processing**: ~10-30 seconds
+3. **Results Dashboard**:
+   - Total entries analyzed
+   - Risk levels (High/Medium/Low)
+   - Visual charts
+   - Detected anomalies with details
+   - Timeline of security events
 
-### 3. View Analysis Results
+## Stopping the Application
 
-After uploading, the system will:
+To stop all services:
 
-- Parse the log file
-- Detect log format automatically
-- Run statistical anomaly detection
-- Run AI-powered analysis (if OpenAI key is configured)
-- Display results with:
-  - Timeline of events
-  - Anomalies detected with confidence scores
-  - Statistics and visualizations
+```bash
+docker-compose down
+```
 
-## API Endpoints
+To stop and remove all data (including database):
 
-### Authentication
-
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/auth/verify` - Verify JWT token
-
-### Logs
-
-- `POST /api/logs/upload` - Upload log file
-- `GET /api/logs/:fileId/analysis` - Get analysis results
-- `GET /api/logs` - Get user's log files
-
-### Health Check
-
-- `GET /health` - Check API and database status
-
-## AI Configuration
-
-The application uses OpenAI GPT-4 for advanced anomaly detection. To enable:
-
-1. Get an API key from https://platform.openai.com/
-2. Add it to `backend/.env`:
-   ```
-   OPENAI_API_KEY=sk-your-key-here
-   ```
-3. Restart the backend
-
-Without an OpenAI key, the application will still work with statistical anomaly detection.
+```bash
+docker-compose down -v
+```
 
 ## Troubleshooting
 
-### Database Connection Issues
+### Docker Desktop Not Running
 
-If you see database connection errors:
+**Error**: `Cannot connect to the Docker daemon`
 
-```bash
-# Check if PostgreSQL is running
-pg_isready
-
-# Check connection settings in backend/.env
-```
+**Solution**: 
+1. Open Docker Desktop
+2. Wait for it to fully start (icon turns green/white)
+3. Run `docker-compose up -d` again
 
 ### Port Already in Use
 
-If ports 3000 or 5000 are already in use:
+**Error**: `port is already allocated`
 
+**Solution**:
 ```bash
-# Find and kill the process
-# On Windows:
+# Find what's using the port (Windows)
 netstat -ano | findstr :3000
+netstat -ano | findstr :5000
+
+# Kill the process
 taskkill /PID <PID> /F
 
-# On Linux/Mac:
-lsof -ti:3000 | xargs kill -9
+# Or change the ports in docker-compose.yml
 ```
 
-### Frontend Build Errors
+### Database Connection Failed
 
-If you encounter TypeScript errors:
+**Error**: `ECONNREFUSED 127.0.0.1:5432`
 
+**Solution**:
 ```bash
-cd frontend
-rm -rf node_modules .next
-npm install
-npm run dev
+# Check if PostgreSQL container is running
+docker ps
+
+# View logs
+docker-compose logs postgres
+
+# Restart services
+docker-compose restart
 ```
 
-### Backend Build Errors
+### Frontend Won't Load
+
+**Solution**:
+```bash
+# Check frontend logs
+docker-compose logs frontend
+
+# Rebuild frontend
+docker-compose up -d --build frontend
+```
+
+### AI Analysis Not Working
+
+**Symptoms**: Only seeing gray "📊 Statistical" badges
+
+**Solutions**:
+1. Check if `ANTHROPIC_API_KEY` is set in `backend/.env`
+2. Verify the key starts with `sk-ant-api03-`
+3. Restart backend: `docker-compose restart backend`
+4. Check backend logs: `docker-compose logs backend`
+5. You should see: `🤖 Starting AI-powered anomaly detection with Claude...`
+
+## Development Mode
+
+If you want to develop and see live changes:
+
+### Backend Development
 
 ```bash
 cd backend
-rm -rf node_modules dist
 npm install
 npm run dev
+```
+
+### Frontend Development
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Viewing Logs
+
+To view real-time logs from all services:
+
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f postgres
+```
+
+## Updating the Application
+
+To get the latest changes:
+
+```bash
+# Pull latest code
+git pull
+
+# Rebuild containers
+docker-compose up -d --build
+
+# View updated containers
+docker ps
 ```
 
 ## Project Structure
@@ -221,107 +277,48 @@ npm run dev
 claude-log-analyzer/
 ├── backend/                 # Express.js API
 │   ├── src/
-│   │   ├── config/         # Database configuration
-│   │   ├── controllers/    # Request handlers
-│   │   ├── middleware/     # Auth middleware
-│   │   ├── routes/         # API routes
-│   │   ├── services/       # Business logic
-│   │   │   ├── logParser.ts          # Multi-format log parser
-│   │   │   ├── anomalyDetector.ts    # Statistical analysis
-│   │   │   └── aiAnalyzer.ts         # AI-powered analysis
-│   │   └── types/          # TypeScript definitions
+│   │   ├── services/
+│   │   │   ├── productionAnomalyDetector.ts  # Statistical detection
+│   │   │   ├── aiAnalyzer.ts                 # Claude AI analysis
+│   │   │   └── logParser.ts                  # Multi-format parser
+│   │   └── controllers/
 │   └── uploads/            # Uploaded log files
 ├── frontend/               # Next.js application
 │   └── src/
-│       ├── app/            # Next.js pages
-│       └── components/     # React components
-├── database/               # Database schema
+│       └── app/
+│           └── dashboard/  # Main dashboard UI
+├── database/               # PostgreSQL schema
 ├── examples/               # Sample log files
 └── docker-compose.yml      # Docker configuration
 ```
 
-## Development
-
-### Running Tests
-
-```bash
-# Backend tests
-cd backend
-npm test
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Building for Production
-
-```bash
-# Backend
-cd backend
-npm run build
-npm start
-
-# Frontend
-cd frontend
-npm run build
-npm start
-```
-
-## Supported Log Formats
-
-- **Apache/Nginx** - Combined log format
-- **ZScaler** - Web proxy logs (CSV)
-- **Application Logs** - Generic format with timestamps
-- **Generic** - Best-effort parsing for unknown formats
-
-## Anomaly Detection Features
-
-### Statistical Detection
-
-- High request rates from single IP
-- Burst traffic patterns
-- SQL injection attempts
-- XSS attack patterns
-- Path traversal attempts
-- Unusual time access (1-5 AM)
-- High error rates
-- Authentication failures
-- Suspicious user agents
-
-### AI-Powered Detection
-
-- Complex attack patterns
-- Data exfiltration attempts
-- Session hijacking indicators
-- Privilege escalation attempts
-- Contextual threat analysis
-
-## Security Notes
-
-- Change default admin password immediately
-- Use strong JWT secrets in production
-- Enable HTTPS in production
-- Regularly update dependencies
-- Keep OpenAI API key secure
-- Limit file upload sizes
-- Implement rate limiting in production
-
 ## Next Steps
 
-1. **Test with your own log files**
-2. **Configure AI analysis with OpenAI**
-3. **Customize anomaly detection rules**
-4. **Deploy to cloud platform** (see DEPLOYMENT.md)
-5. **Record video walkthrough** of implementation
+1. ✅ **Upload your first log file**
+2. ✅ **View the analysis results**
+3. ✅ **Configure Claude API** for AI-powered insights
+4. 📚 **Read the full documentation** in README.md
+5. 🎯 **Customize detection rules** for your use case
 
 ## Support
 
 For issues or questions:
 
-- Check the main README.md
-- Review the code documentation
+- Check the main [README.md](README.md)
+- Review [AUTH-GUIDE.md](AUTH-GUIDE.md) for authentication details
+- Review [DATABASE.md](DATABASE.md) for database schema
 - Open a GitHub issue
+
+## Security Notes
+
+⚠️ **Important for Production**:
+
+- Change JWT secret in `.env`
+- Use strong database passwords
+- Enable HTTPS
+- Keep Claude API key secure (never commit to git)
+- Implement rate limiting
+- Regular security updates
 
 ## License
 

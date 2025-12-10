@@ -74,11 +74,36 @@ export class AIAnalyzer {
         - Privilege escalation attempts
         - Session hijacking indicators
         
+        CRITICAL - SEVERITY CONSISTENCY RULES:
+        You MUST use these exact severity levels to match statistical analysis:
+        
+        CRITICAL severity (only these):
+        - SQL injection attempts (UNION SELECT, DROP TABLE, auth bypass)
+        
+        HIGH severity (always):
+        - XSS attacks (script tags, javascript protocol)
+        - Path traversal (../, /etc/passwd, /etc/shadow, /var/log access)
+        - Command injection (bash execution, nc reverse shells, curl/wget RCE, command substitution)
+        - Brute force attacks (multiple failed login attempts)
+        - Scanner activity (sqlmap, nikto, nmap, masscan, burp, acunetix, nessus)
+        - Privileged DELETE operations (deleting users, data, resources)
+        
+        MEDIUM severity:
+        - Unauthorized admin access attempts (403 on /admin endpoints)
+        - Privileged PUT operations (modifying settings/configuration)
+        - High request rate / DDoS patterns
+        - Unusual user agents
+        
+        LOW severity:
+        - Unusual access times
+        - Minor anomalies
+        - Information disclosure (low impact)
+        
         Respond in JSON format with an array of anomalies. Each anomaly should have:
-        - type: string (e.g., "sql_injection", "brute_force", "data_exfiltration")
+        - type: string (e.g., "sql_injection_attempt", "xss_attempt", "brute_force_attack")
         - description: string (clear explanation for SOC analysts)
         - confidence: number (0-100)
-        - severity: string ("low", "medium", "high", "critical")
+        - severity: string ("low", "medium", "high", "critical") - MUST strictly follow the rules above
         - evidence: array of log entry indices or patterns that support this finding`,
         messages: [
           {
